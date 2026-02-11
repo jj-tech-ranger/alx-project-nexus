@@ -3,14 +3,13 @@ import Image from "next/image"
 import { Product } from "@/lib/types"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { StarRating } from "./star-rating"
+import { StarRating } from "@/components/star-rating" 
 import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
 
 const getImageUrl = (imagePath: string | null) => {
-  if (!imagePath) return "/placeholder.jpg"; 
+  if (!imagePath) return "/placeholder.jpg";
   if (imagePath.startsWith("http")) return imagePath;
-  
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
   return `${apiUrl}${imagePath}`;
 };
@@ -21,7 +20,6 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart()
-
   const imageUrl = getImageUrl(product.image);
 
   return (
@@ -64,3 +62,5 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   )
 }
+
+export default ProductCard;
