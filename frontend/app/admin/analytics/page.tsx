@@ -34,7 +34,7 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => `KSh ${value.toLocaleString()}`} />
+              <Tooltip formatter={(value) => value ? `KSh ${Number(value).toLocaleString()}` : 'KSh 0'} />
               <Legend />
               <Line type="monotone" dataKey="sales" stroke="#8B5CF6" strokeWidth={2} />
             </LineChart>
