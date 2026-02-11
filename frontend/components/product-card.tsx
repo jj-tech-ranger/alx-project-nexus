@@ -7,11 +7,10 @@ import { StarRating } from "./star-rating"
 import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
 
-// HELPER: Fixes the image URL if it's missing the domain
 const getImageUrl = (imagePath: string | null) => {
-  if (!imagePath) return "/placeholder.jpg"; // Fallback
-  if (imagePath.startsWith("http")) return imagePath; // Already a full URL (Cloudinary)
-  // Otherwise, prepend the API URL
+  if (!imagePath) return "/placeholder.jpg"; 
+  if (imagePath.startsWith("http")) return imagePath;
+  
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
   return `${apiUrl}${imagePath}`;
 };
@@ -23,7 +22,6 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart()
 
-  // Use the helper here
   const imageUrl = getImageUrl(product.image);
 
   return (
@@ -31,7 +29,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="relative aspect-square overflow-hidden bg-secondary/20">
         <Link href={`/product/${product.slug}`}>
           <Image
-            src={imageUrl} // <--- UPDATED THIS LINE
+            src={imageUrl}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
