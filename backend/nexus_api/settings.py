@@ -5,10 +5,8 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY: Keep secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-this')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-CHANGE-THIS-LOCALLY')
 
-# SECURITY: Render/Railway provide the RENDER external URL or RAILWAY_STATIC_URL
 DEBUG = 'RENDER' not in os.environ and 'RAILWAY_ENVIRONMENT' not in os.environ
 
 ALLOWED_HOSTS = ['*']
@@ -19,7 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage', # Must be before staticfiles
+    'cloudinary_storage', 
     'django.contrib.staticfiles',
     'cloudinary',
     'rest_framework',
@@ -31,7 +29,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # Critical for static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -40,7 +38,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True # Allow Vercel frontend
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'nexus_api.urls'
@@ -63,7 +61,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'nexus_api.wsgi.application'
 
-# Database: Switches between SQLite (Local) and Postgres (Prod) automatically
 DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
@@ -83,14 +80,12 @@ TIME_ZONE = 'Africa/Nairobi'
 USE_I18N = True
 USE_TZ = True
 
-# Static Files (CSS, JavaScript, Images)
+# Static Files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media Files (Uploads)
-# IF we have Cloudinary credentials, use them. ELSE use local folder.
-if os.environ.get('CLOUDINARY_URL'):
+if os.environ.get('CLOUDINARY_URL') or os.environ.get('CLOUDINARY_CLOUD_NAME'):
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
         'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
