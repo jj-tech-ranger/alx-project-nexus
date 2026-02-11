@@ -11,13 +11,17 @@ DEBUG = 'RENDER' not in os.environ and 'RAILWAY_ENVIRONMENT' not in os.environ
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://nexus-app-production-22f4.up.railway.app',
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage', 
+    'cloudinary_storage',
     'django.contrib.staticfiles',
     'cloudinary',
     'rest_framework',
@@ -80,7 +84,6 @@ TIME_ZONE = 'Africa/Nairobi'
 USE_I18N = True
 USE_TZ = True
 
-# Static Files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
