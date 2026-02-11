@@ -1,11 +1,10 @@
 'use client'
 
-import DashboardSidebar from '@/components/dashboard-sidebar'
 import { useUser } from '@/lib/user-context'
 import { getOrders } from '@/lib/api'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Package } from 'lucide-react'
 import { Order } from '@/lib/types'
 
 export default function DashboardPage() {
@@ -13,19 +12,14 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([])
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      const token = localStorage.getItem('accessToken')
-      if (token) {
-        const data = await getOrders(token)
-        setOrders(data)
-      }
+    if (user) {
+      getOrders().then((data) => setOrders(Array.isArray(data) ? data : []))
     }
-    if (user) fetchOrders()
   }, [user])
 
   if (isLoading) {
     return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex h-96 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#1E3A8A]" />
         </div>
     )
@@ -33,8 +27,9 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-        <div className="min-h-screen flex items-center justify-center">
-          <p>Please log in to view your dashboard</p>
+        <div className="flex h-96 items-center justify-center flex-col gap-4">
+          <p className="text-gray-500">Please log in to view your dashboard</p>
+          <Link href="/login" className="text-[#1E3A8A] underline">Go to Login</Link>
         </div>
     )
   }
@@ -51,88 +46,90 @@ export default function DashboardPage() {
   }
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex">
-          <DashboardSidebar />
-
-          <main className="flex-1 p-8">
-            <div className="bg-white rounded-3xl p-8 mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <img
-                    src={user.avatar || '/placeholder-user.jpg'}
-                    alt={user.username}
-                    className="w-20 h-20 rounded-full object-cover"
-                />
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Hello, {user.username}!</h1>
-                  <p className="text-gray-600">It&apos;s good to see you again.</p>
-                </div>
-              </div>
-              <div className="px-4 py-2 rounded-full font-semibold bg-yellow-100 text-yellow-800">
-                Gold Member
-              </div>
+      <div className="space-y-8">
+        {/* Welcome Section */}
+        <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <div className="h-20 w-20 rounded-full bg-[#1E3A8A] text-white flex items-center justify-center text-2xl font-bold">
+              {user.username?.charAt(0).toUpperCase()}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-3xl p-6">
-                <p className="text-gray-600 text-sm mb-2">Total Orders</p>
-                <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
-              </div>
-              <div className="bg-white rounded-3xl p-6">
-                <p className="text-gray-600 text-sm mb-2">Pending Reviews</p>
-                <p className="text-3xl font-bold text-gray-900">0</p>
-              </div>
-              <div className="bg-white rounded-3xl p-6">
-                <p className="text-gray-600 text-sm mb-2">Wallet Balance</p>
-                <p className="text-3xl font-bold text-gray-900">KSh 0.00</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Hello, {user.username}!</h1>
+              <p className="text-gray-500">Welcome to your dashboard.</p>
             </div>
+          </div>
+          <div className="px-4 py-2 rounded-full font-semibold bg-yellow-100 text-yellow-800 text-sm">
+            Gold Member
+          </div>
+        </div>
 
-            <div className="bg-white rounded-3xl p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Recent Orders</h2>
-                <Link href="/dashboard/orders" className="text-[#8B5CF6] hover:text-purple-700 font-semibold">
-                  View All
-                </Link>
-              </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <p className="text-gray-500 text-sm mb-2">Total Orders</p>
+            <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
+          </div>
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <p className="text-gray-500 text-sm mb-2">Saved Items</p>
+            <p className="text-3xl font-bold text-gray-900">0</p>
+          </div>
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <p className="text-gray-500 text-sm mb-2">Wallet Balance</p>
+            <p className="text-3xl font-bold text-gray-900">KSh 0.00</p>
+          </div>
+        </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                  <tr className="bg-[#8B5CF6] text-white">
-                    <th className="px-6 py-3 text-left text-sm font-semibold uppercase">Order ID</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold uppercase">Date</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold uppercase">Total</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold uppercase">Action</th>
-                  </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                  {recentOrders.map((order: Order) => (
+        {/* Recent Orders */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 flex items-center justify-between border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">Recent Orders</h2>
+            <Link href="/dashboard/orders" className="text-sm font-medium text-[#1E3A8A] hover:underline">
+              View All
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Order ID</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Total</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Action</th>
+              </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+              {recentOrders.length > 0 ? (
+                  recentOrders.map((order: Order) => (
                       <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-semibold text-gray-900">#{order.id}</td>
-                        <td className="px-6 py-4 text-gray-600">{new Date(order.created_at).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 font-medium text-gray-900">#{order.id}</td>
+                        <td className="px-6 py-4 text-gray-500">{new Date(order.created_at || Date.now()).toLocaleDateString()}</td>
                         <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      {order.status}
+                    </span>
                         </td>
-                        <td className="px-6 py-4 font-semibold text-gray-900">KSh {Number(order.total_amount).toLocaleString()}</td>
+                        <td className="px-6 py-4 font-medium text-gray-900">KSh {Number(order.total_amount).toLocaleString()}</td>
                         <td className="px-6 py-4">
-                          <Link
-                              href={`/dashboard/orders/${order.id}`}
-                              className="text-[#8B5CF6] hover:text-purple-700 font-semibold"
-                          >
-                            View Details
+                          <Link href={`/dashboard/orders/${order.id}`} className="text-[#1E3A8A] hover:underline text-sm font-medium">
+                            View
                           </Link>
                         </td>
                       </tr>
-                  ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </main>
+                  ))
+              ) : (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                      <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                      <p>No orders found yet.</p>
+                      <Link href="/" className="text-[#1E3A8A] hover:underline mt-2 inline-block">Start Shopping</Link>
+                    </td>
+                  </tr>
+              )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
   )

@@ -17,6 +17,7 @@ export interface User {
   walletBalance?: number
   created_at?: string
   updated_at?: string
+  is_staff?: boolean // NEW FIELD
 }
 
 export interface AuthResponse {
@@ -56,18 +57,6 @@ export interface CartItem {
   slug: string
 }
 
-export interface Cart {
-  id: string
-  userId: string
-  items: CartItem[]
-  subtotal: number
-  tax: number
-  shipping: number
-  total: number
-  created_at: string
-  updated_at: string
-}
-
 export interface OrderItem {
   id: string | number
   product: string | number
@@ -83,19 +72,33 @@ export interface Order {
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
   total_amount: number
   shipping_address: string
-  phone_number: string
   payment_method: string
   items: OrderItem[]
   created_at: string
   updated_at?: string
 }
 
-export interface Address {
-  id: string | number
-  street: string
-  city: string
-  phone: string
-  is_default: boolean
+export interface LoginCredentials {
+  username: string
+  password: string
+}
+
+export interface RegisterData {
+  username: string
+  email: string
+  password: string
+}
+
+export interface OrderPayload {
+  total_amount: number
+  status?: string
+  shipping_address: string
+  payment_method: string
+  items: {
+    product_id: string | number
+    quantity: number
+    price: number
+  }[]
 }
 
 export interface Review {
@@ -115,22 +118,14 @@ export interface DashboardStats {
   lowStock: number
 }
 
-export interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  error?: {
-    message: string
-    code: string
-  }
-  meta?: {
-    timestamp: string
-    version: string
-  }
-}
-
-export interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
+export interface Address {
+  id: string | number
+  full_name: string
+  label: 'home' | 'work' | 'other'
+  street: string
+  city: string
+  postal_code: string
+  country: string
+  phone: string
+  is_default: boolean
 }

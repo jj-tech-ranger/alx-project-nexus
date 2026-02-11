@@ -97,11 +97,15 @@ export default function SearchPage() {
   useEffect(() => {
     const fetchResults = async () => {
       setLoading(true)
-      const params = new URLSearchParams()
-      if (query) params.append('search', query)
-      if (category) params.append('search', category)
 
-      const data = await getProducts(params.toString())
+      // FIXED: Pass an object, not a URLSearchParams string
+      const searchParamsObj: { search?: string; category?: string } = {}
+      if (query) searchParamsObj.search = query
+      // Note: If your backend filters category via a separate field, use that key.
+      // Assuming 'category' is filtered via search param or a specific 'category' param
+      if (category) searchParamsObj.category = category
+
+      const data = await getProducts(searchParamsObj)
       setProducts(data)
       setLoading(false)
     }

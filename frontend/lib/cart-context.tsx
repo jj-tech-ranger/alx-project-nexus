@@ -1,115 +1,106 @@
-'use client'
+"use client"
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-
-export interface CartItem {
-  id: string
-  productId?: string
-  title: string
-  price: number
-  image: string
-  quantity: number
-  slug?: string
-  sku?: string
-  category?: string
-}
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { Product, CartItem } from '@/lib/types'
+import { toast } from '@/components/ui/use-toast'
 
 interface CartContextType {
   items: CartItem[]
   addItem: (item: CartItem) => void
-  removeItem: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
+  removeItem: (id: string | number) => void
+  updateQuantity: (id: string | number, quantity: number) => void
   clearCart: () => void
-  cartCount: number
   cartTotal: number
-  isLoading: boolean
+  cartCount: number
+  addToCart: (product: Product, quantity?: number) => void // Helper for Product Pages
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
-const STORAGE_KEY = 'novamart_cart'
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
-  // Initialize cart from localStorage on mount
+  // Load cart from local storage on mount
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem(STORAGE_KEY)
-      if (savedCart) {
-        const parsedCart = JSON.parse(savedCart)
-        setItems(Array.isArray(parsedCart) ? parsedCart : [])
+    const savedCart = localStorage.getItem('cart')
+    if (savedCart) {
+      try {
+        setItems(JSON.parse(savedCart))
+      } catch (e) {
+        console.error("Failed to parse cart", e)
       }
-    } catch (error) {
-      console.error('[v0] Error loading cart from localStorage:', error)
-      setItems([])
-    } finally {
-      setIsLoading(false)
     }
+    setMounted(true)
   }, [])
 
-  // Persist cart to localStorage whenever items change
+  // Save cart to local storage whenever it changes
   useEffect(() => {
-    if (!isLoading) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-      } catch (error) {
-        console.error('[v0] Error saving cart to localStorage:', error)
-      }
+    if (mounted) {
+      localStorage.setItem('cart', JSON.stringify(items))
     }
-  }, [items, isLoading])
+  }, [items, mounted])
 
-  const addItem = useCallback((newItem: CartItem) => {
-    setItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === newItem.id)
+  const addItem = (newItem: CartItem) => {
+    setItems((prevItems) => {
+      const existingItem = prevItems.find((i) => i.id === newItem.id)
       if (existingItem) {
-        return prevItems.map(item =>
-            item.id === newItem.id
-                ? { ...item, quantity: item.quantity + (newItem.quantity || 1) }
-                : item
+        return prevItems.map((i) =>
+            i.id === newItem.id ? { ...i, quantity: i.quantity + newItem.quantity } : i
         )
       }
-      return [...prevItems, { ...newItem, quantity: newItem.quantity || 1 }]
+      return [...prevItems, newItem]
     })
-  }, [])
+  }
 
-  const removeItem = useCallback((id: string) => {
-    setItems(prevItems => prevItems.filter(item => item.id !== id))
-  }, [])
+  // Helper to adapt Product -> CartItem
+  const addToCart = (product: Product, quantity = 1) => {
+    addItem({
+      id: product.id,
+      title: product.name,
+      price: Number(product.price),
+      image: product.image,
+      quantity: quantity,
+      slug: product.slug
+    })
+  }
 
-  const updateQuantity = useCallback((id: string, quantity: number) => {
-    if (quantity <= 0) {
+  const removeItem = (id: string | number) => {
+    setItems((prevItems) => prevItems.filter((i) => i.id !== id))
+    toast({ title: "Item removed from cart" })
+  }
+
+  const updateQuantity = (id: string | number, quantity: number) => {
+    if (quantity < 1) {
       removeItem(id)
       return
     }
-    setItems(prevItems =>
-        prevItems.map(item =>
-            item.id === id ? { ...item, quantity } : item
-        )
+    setItems((prevItems) =>
+        prevItems.map((i) => (i.id === id ? { ...i, quantity } : i))
     )
-  }, [removeItem])
-
-  const clearCart = useCallback(() => {
-    setItems([])
-  }, [])
-
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0)
-
-  const cartTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-
-  const value: CartContextType = {
-    items,
-    addItem,
-    removeItem,
-    updateQuantity,
-    clearCart,
-    cartCount,
-    cartTotal,
-    isLoading,
   }
 
+  const clearCart = () => {
+    setItems([])
+    localStorage.removeItem('cart')
+  }
+
+  const cartTotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
+  const cartCount = items.reduce((count, item) => count + item.quantity, 0)
+
   return (
-      <CartContext.Provider value={value}>
+      <CartContext.Provider
+          value={{
+            items,
+            addItem,
+            removeItem,
+            updateQuantity,
+            clearCart,
+            cartTotal,
+            cartCount,
+            addToCart
+          }}
+      >
         {children}
       </CartContext.Provider>
   )

@@ -1,6 +1,6 @@
-import { Product, Order, User, DashboardStats, Category, Address, Review } from './types'
+import { Product, Order, User, Category, Address } from './types'
 
-const API_BASE_URL = 'http://127.0.0.1:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>
@@ -14,14 +14,22 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken')
       if (token) {
-        headers.Authorization = `JWT ${token}`
+        headers.Authorization = `Bearer ${token}`
       }
     }
     return headers
   }
 
   private buildUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined>): string {
-    const path = endpoint.endsWith('/') ? endpoint : `${endpoint}/`
+    // Ensure endpoint doesn't start with / if we are appending to base
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+
+    // intelligently add trailing slash only if no query params exist in the string yet
+    let path = cleanEndpoint
+    if (!path.includes('?') && !path.endsWith('/')) {
+      path = `${path}/`
+    }
+
     const url = new URL(`${API_BASE_URL}${path}`)
 
     if (params) {
@@ -49,6 +57,14 @@ class ApiClient {
 
       if (response.status === 204) return {} as T
 
+      // Handle non-JSON responses (like 404/500 HTML pages)
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        if (!response.ok) throw new Error(`Server Error: ${response.status}`)
+        // If it's 200 but not JSON? Rare, but handle gracefully
+        return {} as T
+      }
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -64,14 +80,14 @@ class ApiClient {
   }
 
   async login(username: string, password: string): Promise<{ access: string; refresh: string; user: User }> {
-    return this.request('/auth/jwt/create', {
+    return this.request('/api/auth/token', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     })
   }
 
   async register(userData: Partial<User>): Promise<User> {
-    return this.request('/auth/users', {
+    return this.request('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
@@ -85,14 +101,7 @@ class ApiClient {
   }
 
   async getProfile(): Promise<User> {
-    return this.request('/auth/users/me')
-  }
-
-  async updateProfile(userData: Partial<User>): Promise<User> {
-    return this.request('/auth/users/me/', {
-      method: 'PATCH',
-      body: JSON.stringify(userData),
-    })
+    return this.request('/api/auth/users/me')
   }
 
   async getCategories(): Promise<Category[]> {
@@ -103,27 +112,8 @@ class ApiClient {
     return this.request('/api/products', { params })
   }
 
-  async getProduct(id: string | number): Promise<Product> {
-    return this.request(`/api/products/${id}`)
-  }
-
-  async createProduct(productData: FormData): Promise<Product> {
-    const token = localStorage.getItem('accessToken')
-    const res = await fetch(`${API_BASE_URL}/api/products/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `JWT ${token}`
-      },
-      body: productData
-    })
-    if (!res.ok) throw new Error('Failed to create product')
-    return res.json()
-  }
-
-  async deleteProduct(id: string | number): Promise<void> {
-    return this.request(`/api/products/${id}`, {
-      method: 'DELETE',
-    })
+  async getProduct(slug: string): Promise<Product> {
+    return this.request(`/api/products/${slug}`)
   }
 
   async getOrders(params?: Record<string, string | number | boolean>): Promise<Order[]> {
@@ -132,13 +122,6 @@ class ApiClient {
 
   async getOrder(id: string | number): Promise<Order> {
     return this.request(`/api/orders/${id}`)
-  }
-
-  async updateOrderStatus(orderId: string | number, status: string): Promise<Order> {
-    return this.request(`/api/orders/${orderId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    })
   }
 
   async getAddresses(): Promise<Address[]> {
@@ -153,35 +136,44 @@ class ApiClient {
   }
 
   async deleteAddress(id: string | number): Promise<void> {
-    return this.request(`/api/addresses/${id}/`, {
-      method: 'DELETE'
+    return this.request(`/api/addresses/${id}`, { method: 'DELETE' })
+  }
+
+  async getSavedItems(): Promise<any[]> {
+    return this.request('/api/saved-items')
+  }
+
+  async addToWishlist(productId: string | number): Promise<any> {
+    return this.request('/api/saved-items/', {
+      method: 'POST',
+      body: JSON.stringify({ product: productId })
     })
   }
 
-  async createReview(reviewData: { product: string | number, rating: number, comment: string }): Promise<Review> {
+  async removeFromWishlist(id: string | number): Promise<void> {
+    return this.request(`/api/saved-items/${id}`, { method: 'DELETE' })
+  }
+
+  // FIX: Pass product ID as a param, not part of the string
+  async getReviews(productId: string | number): Promise<any[]> {
+    return this.request('/api/reviews', {
+      params: { product: productId }
+    })
+  }
+
+  async getAllReviews(): Promise<any[]> {
+    return this.request('/api/reviews')
+  }
+
+  async createReview(productId: string | number, rating: number, comment: string): Promise<any> {
     return this.request('/api/reviews/', {
       method: 'POST',
-      body: JSON.stringify(reviewData)
+      body: JSON.stringify({ product: productId, rating, comment })
     })
   }
 
-  async getDashboardStats(): Promise<DashboardStats> {
-    const [orders, products] = await Promise.all([
-      this.getOrders(),
-      this.getProducts()
-    ])
-
-    const totalRevenue = orders.reduce((sum: number, order: Order) => sum + Number(order.total_amount), 0)
-    const activeOrders = orders.filter((o: Order) => ['pending', 'processing'].includes(o.status)).length
-    const lowStock = products.filter((p: Product) => p.stock < 10).length
-
-    return {
-      revenue: totalRevenue,
-      totalOrders: orders.length,
-      totalProducts: products.length,
-      activeOrders,
-      lowStock
-    }
+  async getPurchasedProducts(): Promise<Product[]> {
+    return this.request('/api/purchased-products')
   }
 }
 

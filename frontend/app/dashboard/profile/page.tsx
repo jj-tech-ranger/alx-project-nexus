@@ -1,110 +1,56 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useUser } from '@/lib/user-context'
+import { User, Mail, Phone, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { apiClient } from '@/lib/api-client'
-import { useUser } from '@/lib/user-context'
-import { useToast } from '@/hooks/use-toast'
-import { Loader2, User as UserIcon } from 'lucide-react'
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useUser()
-  const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    first_name: '',
-    last_name: ''
-  })
+  const { user } = useUser()
 
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        username: user.username || '',
-        email: user.email || '',
-        first_name: user.first_name || '',
-        last_name: user.last_name || ''
-      })
-    }
-  }, [user])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      await apiClient.updateProfile({
-        username: formData.username,
-        first_name: formData.first_name,
-        last_name: formData.last_name
-      })
-      await refreshUser()
-      toast({ title: "Profile Updated", description: "Your details have been saved." })
-    } catch (error) {
-      toast({ title: "Update Failed", description: "Could not save changes.", variant: "destructive" })
-    } finally {
-      setLoading(false)
-    }
-  }
+  if (!user) return null
 
   return (
-      <div className="max-w-xl">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[#1E3A8A]">Profile Settings</h1>
-          <p className="text-gray-500">Manage your account information.</p>
-        </div>
+      <div className="max-w-3xl">
+        <h1 className="text-2xl font-bold text-[#1E3A8A] mb-8">My Profile</h1>
 
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-              <UserIcon size={32} />
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm mb-8">
+          <div className="flex items-center gap-6 mb-8">
+            <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-[#1E3A8A] text-3xl font-bold">
+              {user.username?.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h2 className="font-bold text-lg">{user?.username}</h2>
-              <p className="text-gray-500 text-sm">{user?.email}</p>
+              <h2 className="text-xl font-bold text-gray-900">{user.username}</h2>
+              <p className="text-gray-500">{user.email}</p>
+              <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                <Shield className="w-3 h-3" /> Verified Account
+              </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                    id="first_name"
-                    value={formData.first_name}
-                    onChange={e => setFormData({...formData, first_name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                    id="last_name"
-                    value={formData.last_name}
-                    onChange={e => setFormData({...formData, last_name: e.target.value})}
-                />
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  disabled
-                  className="bg-gray-50"
-              />
-              <p className="text-xs text-gray-400">Email cannot be changed directly.</p>
+              <Label>Username</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <Input value={user.username} disabled className="pl-10 bg-gray-50" />
+              </div>
             </div>
+            <div className="space-y-2">
+              <Label>Email Address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <Input value={user.email} disabled className="pl-10 bg-gray-50" />
+              </div>
+            </div>
+          </div>
+        </div>
 
-            <Button type="submit" className="w-full bg-[#1E3A8A]" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin mr-2" /> : null}
-              Save Changes
-            </Button>
-          </form>
+        <div className="flex justify-end">
+          <Button className="bg-[#1E3A8A] hover:bg-blue-800">
+            Save Changes (Coming Soon)
+          </Button>
         </div>
       </div>
   )
