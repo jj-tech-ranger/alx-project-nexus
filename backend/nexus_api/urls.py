@@ -1,3 +1,4 @@
+from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from core.views import (
@@ -12,7 +13,6 @@ from rest_framework_simplejwt.views import (
 from django.conf import settings
 from django.conf.urls.static import static
 
-# Router Config
 router = DefaultRouter()
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'categories', CategoryViewSet, basename='category')
@@ -24,19 +24,14 @@ router.register(r'admin/customers', AdminUserViewSet, basename='admin-customers'
 router.register(r'admin/orders', AdminOrderViewSet, basename='admin-orders')
 
 urlpatterns = [
-    # Main API Router
+    path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-
-    # Authentication Endpoints (Restored)
     path('api/auth/register/', RegisterView.as_view(), name='register'),
-    path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # Login
+    path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/users/me/', CurrentUserView.as_view(), name='current-user'),
-
-    # Custom Views
     path('api/admin/analytics/', AdminAnalyticsView.as_view(), name='admin-analytics'),
     path('api/purchased-products/', PurchasedProductsView.as_view(), name='purchased-products'),
-
     path('api/auth-browsable/', include('rest_framework.urls')),
 ]
 
