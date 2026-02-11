@@ -8,10 +8,10 @@ from core.models import Product, Order, OrderItem, Address, Category, SavedItem,
 from django.utils import timezone
 
 class Command(BaseCommand):
-    help = 'Seeds database using EXISTING local images from media/products'
+    help = 'Seeds database. Uses local images if available, otherwise creates products without images.'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write('Starting Local Media Seed...')
+        self.stdout.write('Starting Database Seed...')
 
         # 1. Cleanup
         User.objects.exclude(is_superuser=True).delete()
@@ -28,7 +28,6 @@ class Command(BaseCommand):
             categories[name] = cat
 
         # 3. Products Mapping (Name, Price, Category, Filename)
-        # CORRECTION: Fixed sony_wh-1000xm5.jpg filename
         products_list = [
             ("AirPods Max", 85000, "Audio", "airpods_max.jpg"),
             ("Apple Watch Ultra", 120000, "Watches", "apple-watch-ultra.jpg"),
@@ -56,7 +55,7 @@ class Command(BaseCommand):
             ("PS5 Slim", 75000, "Gaming", "ps5-slim.jpg"),
             ("PS5 Controller", 12000, "Gaming", "ps5_controller.jpg"),
             ("Samsung S24 Ultra", 195000, "Phones", "samsung_s24_ultra.jpg"),
-            ("Sony WH-1000XM5", 45000, "Audio", "sony_wh-1000xm5.jpg"), # FIXED
+            ("Sony WH-1000XM5", 45000, "Audio", "sony_wh-1000xm5.jpg"),
             ("Xiaomi 14", 105000, "Phones", "xiaomi-14.jpg"),
         ]
 
@@ -64,24 +63,26 @@ class Command(BaseCommand):
 
         for name, price, cat_name, filename in products_list:
             file_path = os.path.join(settings.MEDIA_ROOT, 'products', filename)
+            
+            prod = Product(
+                name=name,
+                description=f"Authentic {name}. Premium build quality. Includes 1 year warranty.",
+                price=price,
+                category=categories.get(cat_name, categories['Accessories']),
+                stock=random.randint(5, 50),
+                is_featured=random.choice([True, False])
+            )
 
+            # Check if file exists to attach it, but DON'T skip product creation if missing
             if os.path.exists(file_path):
-                prod = Product(
-                    name=name,
-                    description=f"Authentic {name}. Premium build quality. Includes 1 year warranty.",
-                    price=price,
-                    category=categories.get(cat_name, categories['Accessories']),
-                    stock=random.randint(5, 50),
-                    is_featured=random.choice([True, False])
-                )
-
                 with open(file_path, 'rb') as f:
-                    prod.image.save(filename, File(f), save=True)
-
-                db_products.append(prod)
-                self.stdout.write(self.style.SUCCESS(f"Created: {name}"))
+                    prod.image.save(filename, File(f), save=False)
             else:
-                self.stdout.write(self.style.WARNING(f"File missing: {filename} (Skipping)"))
+                self.stdout.write(self.style.WARNING(f"Image missing for {name}, creating without image file."))
+
+            prod.save()
+            db_products.append(prod)
+            self.stdout.write(self.style.SUCCESS(f"Created: {name}"))
 
         # 4. Create Users (15 Personas)
         personas = [
